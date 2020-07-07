@@ -114,6 +114,8 @@ beforehand.
 In case you prefer not to use Docker you can `install InfluxDB <https://docs.influxdata.com/influxdb/v1.8/introduction/install/>`_
 and Redis from your repositories, but keep in mind that the version packaged by your distribution may be different.
 
+If you wish to use ``Elasticsearch`` for storing and retrieving timeseries data then `install Elasticsearch <https://www.elastic.co/guide/en/elasticsearch/reference/current/install-elasticsearch.html>`_.
+
 Install spatialite and sqlite:
 
 .. code-block:: shell
@@ -170,6 +172,20 @@ Follow the setup instructions of `openwisp-controller
         'NAME': 'openwisp2',
         'HOST': 'localhost',
         'PORT': '8086',
+    }
+
+In case, you wish to use ``Elasticsearch`` for timeseries data storage and retrieval,
+make use of the following settings
+
+.. code-block:: python
+
+    TIMESERIES_DATABASE = {
+        'BACKEND': 'openwisp_monitoring.db.backends.elasticsearch',
+        'USER': 'openwisp',
+        'PASSWORD': 'openwisp',
+        'NAME': 'openwisp2',
+        'HOST': 'localhost',
+        'PORT': '9200',
     }
 
 ``urls.py``:
@@ -525,6 +541,9 @@ This data is only used to assess the recent status of devices, keeping
 it for a long time would not add much benefit and would cost a lot more
 in terms of disk space.
 
+**Note**: In case you use ``Elasticsearch`` then time shall be taken as integral multiple of a day.
+That means the time ``36h0m0s`` shall be interpreted as ``24h0m0s`` (integral multiple of a day).
+
 ``OPENWISP_MONITORING_AUTO_PING``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -870,9 +889,19 @@ MB (megabytes) instead of GB (Gigabytes) you can use:
                     "SUM(rx_bytes) / 1000000 AS download FROM {key} "
                     "WHERE time >= '{time}' AND content_type = '{content_type}' "
                     "AND object_id = '{object_id}' GROUP BY time(1d)"
-                )
+                ),
+                'elasticsearch': _make_query({
+                    'upload': {'sum': {'field': 'points.fields.tx_bytes'}},
+                    'download': {'avg': {'field': 'points.fields.rx_bytes'}},
+                })
             },
         }
+    }
+
+    # Please declare the operations separately in case you use elasticsearch as done below
+    OPENWISP_MONITORING_ADDITIONAL_CHART_OPERATIONS = {
+        'upload': {'operator': '/', 'value': 1000000},
+        'download': {'operator': '/', 'value': 1000000},
     }
 
 Or if you want to define a new chart configuration, which you can then
@@ -881,6 +910,8 @@ call in your custom code (eg: a custom check class), you can do so as follows:
 .. code-block:: python
 
     from django.utils.translation import gettext_lazy as _
+
+    from openwisp_monitoring.db.backends.elasticsearch import _make_query
 
     OPENWISP_MONITORING_CHARTS = {
         'ram': {
@@ -895,7 +926,12 @@ call in your custom code (eg: a custom check class), you can do so as follows:
                     "MEAN(buffered) AS buffered FROM {key} WHERE time >= '{time}' AND "
                     "content_type = '{content_type}' AND object_id = '{object_id}' "
                     "GROUP BY time(1d)"
-                )
+                ),
+                'elasticsearch': _make_query({
+                    'total': {'avg': {'field': 'points.fields.total'}},
+                    'free': {'avg': {'field': 'points.fields.free'}},
+                    'buffered': {'avg': {'field': 'points.fields.buffered'}},
+                })
             },
         }
     }

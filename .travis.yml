@@ -1,0 +1,64 @@
+language: python
+dist: bionic
+cache: pip
+
+python:
+  - "3.6"
+  - "3.7"
+
+env:
+  - DJANGO="django>=2.2,<3.0"
+  - DJANGO="django>=3.0,<3.1"
+
+addons:
+  apt:
+    packages:
+      - sqlite3
+      - fping
+      - gdal-bin
+      - libproj-dev
+      - libgeos-dev
+      - libspatialite-dev
+      - spatialite-bin
+      - libsqlite3-mod-spatialite
+
+services:
+  - docker
+
+branches:
+  only:
+    - master
+    - dev
+
+before_install:
+  - docker-compose up -d
+  - pip install -U pip wheel setuptools
+  - pip install $DJANGO
+  - pip install -U -r requirements-test.txt
+
+install:
+  - pip install -e .[influxdb,elasticsearch]
+  - sh install-dev.sh
+
+script:
+  - ./run-qa-checks
+  # - SAMPLE_APP=1 coverage run -p --source=openwisp_monitoring runtests.py
+  # - coverage run -p --source=openwisp_monitoring runtests.py
+  # - elasticsearch=1 SAMPLE_APP=1 coverage run -p --source=openwisp_monitoring runtests.py
+  - elasticsearch=1 coverage run -p --source=openwisp_monitoring ./tests/manage.py test openwisp_monitoring.device.tests.test_api.TestDeviceApi.test_get_device_metrics_csv
+  - coverage combine
+  - coverage report -m
+
+jobs:
+  include:
+    - stage: Deploy
+      before_install: skip
+      install: skip
+      if: type = push AND branch = master
+      script:
+        - echo "$DOCKER_TOKEN" | docker login --username $DOCKER_USERNAME --password-stdin
+        - docker build . -t openwisp/openwisp-monitoring:develop
+        - docker push openwisp/openwisp-monitoring:develop
+
+after_success:
+  coveralls
