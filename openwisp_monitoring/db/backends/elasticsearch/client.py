@@ -72,7 +72,7 @@ class DatabaseClient(object):
         self.client_error = ElasticsearchException
 
     def create_database(self):
-        """ creates connection to elasticsearch """
+        """creates connection to elasticsearch"""
         connections.create_connection(
             hosts=[f"{TIMESERIES_DB['HOST']}:{TIMESERIES_DB['PORT']}"]
         )
@@ -82,12 +82,12 @@ class DatabaseClient(object):
         self.create_or_alter_retention_policy(name='default')
 
     def drop_database(self):
-        """ deletes all indices """
+        """deletes all indices"""
         logger.debug('Deleted all indices data from Elasticsearch')
 
     @cached_property
     def get_db(self):
-        """ Returns an ``Elasticsearch Client`` instance """
+        """Returns an ``Elasticsearch Client`` instance"""
         return Elasticsearch(
             hosts=[{'host': TIMESERIES_DB['HOST'], 'port': TIMESERIES_DB['PORT']}],
             http_auth=(TIMESERIES_DB['USER'], TIMESERIES_DB['PASSWORD']),
@@ -165,7 +165,7 @@ class DatabaseClient(object):
         self.get_db.indices.refresh(index=name)
 
     def read(self, key, fields, tags=None, limit=1, order='time', **kwargs):
-        """ ``since`` should be of the form 'now() - <int>s' """
+        """``since`` should be of the form 'now() - <int>s'"""
         extra_fields = kwargs.get('extra_fields')
         time_format = kwargs.get('time_format')
         since = kwargs.get('since')
@@ -220,7 +220,7 @@ class DatabaseClient(object):
         return points
 
     def _format_time(self, obj, time_format=None):
-        """ returns datetime object in isoformat / unix timestamp and UTC timezone """
+        """returns datetime object in isoformat / unix timestamp and UTC timezone"""
         if time_format == 'isoformat':
             return obj.astimezone(tz=tz('UTC')).isoformat(timespec='seconds')
         return int(obj.astimezone(tz=tz('UTC')).timestamp())
@@ -232,7 +232,8 @@ class DatabaseClient(object):
                 'buckets'
             ]
             list_points = self._fill_points(
-                query, [self._format(point, precision) for point in points],
+                query,
+                [self._format(point, precision) for point in points],
             )
             list_points.reverse()
         except KeyError:
@@ -423,7 +424,7 @@ class DatabaseClient(object):
         return points
 
     def _format(self, point, precision='s'):
-        """ allowed values for precision are ``s`` and ``ms`` """
+        """allowed values for precision are ``s`` and ``ms``"""
         pt = {}
         # By default values returned are in millisecond precision
         if precision == 'ms':
@@ -438,7 +439,7 @@ class DatabaseClient(object):
         return pt
 
     def _transform_field(self, field, value):
-        """ Performs arithmetic operations on the field if required """
+        """Performs arithmetic operations on the field if required"""
         if value is None:
             return value
         if field in math_map:
@@ -456,9 +457,13 @@ class DatabaseClient(object):
         return q
 
     def _device_data(self, key, tags, fields, **kwargs):
-        """ returns last snapshot of ``device_data`` """
+        """returns last snapshot of ``device_data``"""
         return self.read(
-            key=key, fields=fields, tags=tags, order='-time', time_format='isoformat',
+            key=key,
+            fields=fields,
+            tags=tags,
+            order='-time',
+            time_format='isoformat',
         )
 
 

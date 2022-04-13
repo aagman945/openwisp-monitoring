@@ -65,9 +65,9 @@ default_chart_query = {
 
 math_map = {
     'uptime': {'operator': '*', 'value': 100},
-    'memory_usage': {'operator': '*', 'value': 100},
+    'memory_usage': {'operator': '*', 'value': 0},
     'CPU_load': {'operator': '*', 'value': 100},
-    'disk_usage': {'operator': '*', 'value': 100},
+    'disk_usage': {'operator': '*', 'value': 0},
     'upload': {'operator': '/', 'value': 1000000000},
     'download': {'operator': '/', 'value': 1000000000},
 }
@@ -113,13 +113,21 @@ def _get_chart_query():
             'wifi_clients': {
                 'cardinality': {
                     'field': 'points.fields.{field_name}.keyword',
-                    'missing': 0,
                 }
             }
         },
         'memory': {'memory_usage': {'avg': {'field': 'points.fields.percent_used'}}},
         'cpu': {'CPU_load': {'avg': {'field': 'points.fields.cpu_usage'}}},
         'disk': {'disk_usage': {'avg': {'field': 'points.fields.used_disk'}}},
+        'signal_strength': {
+            'signal_strength': {'avg': {'field': 'points.fields.signal_strength'}},
+            'signal_power': {'avg': {'field': 'points.fields.signal_power'}},
+        },
+        'signal_quality': {
+            'signal_quality': {'avg': {'field': 'points.fields.signal_quality'}},
+            'signal_to_noise_ratio': {'avg': {'field': 'points.fields.snr'}},
+        },
+        'access_tech': {'access_tech': {'max': {'field': 'points.fields.access_tech'}}},
     }
     query = {}
     for key, value in aggregation_dict.items():

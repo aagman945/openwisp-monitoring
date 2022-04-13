@@ -278,7 +278,7 @@ class TestDeviceApi(AuthenticationMixin, DeviceMonitoringTestCase):
             content_object=d, name='applications', configuration='get_top_fields'
         )
         self._create_chart(metric=m, configuration='histogram')
-        m.write(None, extra_values={'http2': 90, 'ssh': 100, 'udp': 80, 'spdy': 70})
+        m.write(None,extra_values={'http2': 90, 'ssh': 100, 'udp': 80, 'spdy': 70})
         r = self.client.get('{0}&csv=1'.format(self._url(d.pk, d.key)))
         self.assertEqual(r.get('Content-Disposition'), 'attachment; filename=data.csv')
         self.assertEqual(r.get('Content-Type'), 'text/csv')
@@ -308,17 +308,17 @@ class TestDeviceApi(AuthenticationMixin, DeviceMonitoringTestCase):
                 '2',
                 '0.4',
                 '0.1',
-                '2.0',
-                '1.0',
+                '2',
+                '1',
                 '9.73',
-                '0.0',
+                '0',
                 '8.27',
             ],
         )
         self.assertEqual(rows[-4].strip(), '')
         self.assertEqual(rows[-3].strip(), 'Histogram')
-        self.assertEqual(rows[-2].strip().split(','), ['ssh', '100.0'])
-        self.assertEqual(rows[-1].strip().split(','), ['http2', '90.0'])
+        self.assertEqual(rows[-2].strip().split(','), ['ssh', '100'])
+        self.assertEqual(rows[-1].strip().split(','), ['http2', '90'])
 
     def test_histogram_csv_none_value(self):
         d = self._create_device(organization=self._create_org())
